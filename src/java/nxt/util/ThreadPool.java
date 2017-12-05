@@ -1,0 +1,53 @@
+package nxt.util;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * 
+ * @author clark
+ * 
+ * 2017年12月5日 下午4:34:11
+ * 
+ * thread pool to run application on the background 
+ * 
+ */
+public final class ThreadPool {
+	/**
+	 * scheduled running thread 
+	 */
+	private static ScheduledExecutorService scheduledThreadPool;
+	/**
+	 * running in backgroud , long value is the delay time of the task 
+	 */
+	private static Map<Runnable,Long> backgroudJobs = new HashMap<>();
+	private static Map<Runnable,Long> backgroundJobsCores = new HashMap<>();
+	/**
+	 * prefix and suffix of the job running .
+	 */
+	private static List<Runnable> beforeStartJobs = new ArrayList<>();
+	private static List<Runnable> lastBeforeStartJobs = new ArrayList<>();
+	private static List<Runnable> afterStartJobs = new ArrayList<>();
+	
+	
+	/**
+	 * schedule a task and put it in the background job 
+	 * @param name
+	 * @param runnable
+	 * @param dely
+	 * @param timeUnit
+	 */
+	public static synchronized void scheduleThread(String name , Runnable runnable , int dely , TimeUnit timeUnit){
+		
+		if(scheduledThreadPool != null){
+			throw new IllegalStateException("Executor service already started , no new jobs accepted");
+		}
+		
+		
+	}
+	
+}
