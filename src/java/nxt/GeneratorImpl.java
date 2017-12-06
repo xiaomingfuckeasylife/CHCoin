@@ -4,8 +4,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
 
 import nxt.util.Listeners;
+import nxt.util.ThreadPool;
 
 /**
  * 
@@ -36,8 +38,8 @@ public class GeneratorImpl implements Generator {
 	};
 	
 	static {
-		
-		
+		// delay 500 milliseconds 
+		ThreadPool.scheduleThread("GenerateBlocks", generateBlockThread, 500, TimeUnit.MILLISECONDS);
 		
 	}
 	

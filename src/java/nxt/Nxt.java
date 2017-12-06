@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+import nxt.util.Logger;
 import nxt.util.Time;
 
 /**
@@ -78,8 +79,27 @@ public class Nxt {
 		}
 	}
 	
+	/**
+	 * program entry
+	 * 
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		init();
+	}
 	
-//	private static Generator gener
+	private static int getIntProperty(String name){
+		return getIntProperty(name, 0);
+	}
+	
+	private static int getIntProperty(String name , int defaultVal){
+		String value =  properties.getProperty(name);
+		if(value.equals(anObject)){
+			
+		}
+	}
+	
+	private static Generator generator = new GeneratorImpl();
 	
 	public static boolean getBooleanProperties(String name){
 		return getBooleanProperties(name, false);
@@ -104,6 +124,27 @@ public class Nxt {
 		Logger.logMessage(name+" not defined , assuming false");
 		
 		return defaultValue;
+	}
+	
+	
+	private static void init(){
+		Init.init();
+	}
+	
+	/**
+	 * init all module.
+	 * @author clark
+	 * 2017年12月6日 下午3:51:18
+	 */
+	public static class Init{
+		// initial using the static 
+		static{
+			long startTime = System.currentTimeMillis();
+			Logger.init();
+			
+		}
+		public static void init(){}
+		private Init(){}
 	}
 	
 }

@@ -7,6 +7,10 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import com.mysql.jdbc.log.Log;
+
+import nxt.Nxt;
+
 /**
  * 
  * @author clark
@@ -35,7 +39,8 @@ public final class ThreadPool {
 	
 	
 	/**
-	 * schedule a task and put it in the background job 
+	 * schedule a task and put it in the background job 。
+	 * should be one by one 
 	 * @param name
 	 * @param runnable
 	 * @param dely
@@ -47,7 +52,12 @@ public final class ThreadPool {
 			throw new IllegalStateException("Executor service already started , no new jobs accepted");
 		}
 		
-		
+		if(!Nxt.getBooleanProperties("nxt.disable"+name+"Thread")){
+			backgroudJobs.put(runnable, timeUnit.toMillis(dely));
+		}else{
+			Logger.logMessage("will not run " + name + " thread");
+		}
 	}
+	
 	
 }

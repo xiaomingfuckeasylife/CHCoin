@@ -31,6 +31,7 @@ public interface Time {
 		 */
 		@Override
 		public int getTime() {
+			// because the GeneratorBlock is 500 millisecond delay so this place is add 500 millisecond
 			return (int)(System.currentTimeMillis() - Constants.EPOCH_BEGINNING + 500)/1000;
 		}
 		
