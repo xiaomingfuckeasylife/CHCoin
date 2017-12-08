@@ -1,12 +1,12 @@
 package nxt.db;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Map;
-
-import javax.sql.ConnectionPoolDataSource;
-
-import nxt.Nxt;
 
 /**
  * 
@@ -17,28 +17,13 @@ import nxt.Nxt;
  */
 public final class Db {
 	
-	/**
-	 *  original jdbc ConnectionPool 
-	 */
-	private static final ConnectionPoolDataSource cp;
-	
-	/**
-	 * max active connection.
-	 */
-	private static volatile int maxActiveConnections;
+	private static final NxtConnectionPool cp = NxtConnectionPool.me;
 	
 	private static final ThreadLocal<DbConnection> localConnection = new ThreadLocal<>();
 	
 	private static final ThreadLocal<Map<String,Map<DbKey,Object>>> transactionCaches = new ThreadLocal<>();
 	
 	private static final ThreadLocal<Map<String,Map<DbKey,Object>>> transactionBatches  = new  ThreadLocal<>();
-	
-	
-	static{
-		
-		long maxCacheSize = Nxt.getIntProperty("nxt.dbCacheKB");
-		
-	}
 	
 	/**
 	 * just a gesture
@@ -123,13 +108,110 @@ public final class Db {
 			}else if(this != conn){
 				throw new IllegalStateException("previous transaction is not committed yet");
 			}else{
-				throw new UnsupportedOperationException("use Db.closeTransaction() to close connection");
+				throw new UnsupportedOperationException("use Db.endTransaction() to close connection");
 			}
 		}
 	}
 	
-	static{
+	public static Connection beginTransaction() throws SQLException{
 		
+		DbConnection conn= localConnection.get();
+		if(conn == null){
+			Connection co = cp.getConnection();
+			co.setAutoCommit(false);
+			conn = new DbConnection(co);
+			localConnection.set(conn);
+			// initial transactionCaches
+			transactionCaches.set(new HashMap<String,Map<DbKey,Object>>());
+			// initial transactionBatches
+			transactionBatches.set(new HashMap<String,Map<DbKey,Object>>());
+			return co;
+		}
+		
+		throw new IllegalStateException("transaction already in progress");
 	}
 	
+	
+	public static void endTransaction() {
+		DbConnection conn= localConnection.get();
+		if(conn == null){
+			throw new IllegalStateException("conn is not in process.");
+		}
+		localConnection.set(null);
+		transactionBatches.get().clear();
+		transactionBatches.set(null);
+		transactionCaches.get().clear();
+		transactionCaches.set(null);
+		try {
+			conn.close();
+		} catch (SQLException e) {
+			throw new RuntimeException(e.getMessage(),e);
+		}
+	}
+	
+	public static void commitTransaction(){
+		DbConnection conn= localConnection.get();
+		if(conn == null){
+			throw new IllegalStateException("conn is not in process.");
+		}
+		try {
+			conn.doCommit();
+		} catch (SQLException e) {
+			throw new RuntimeException(e.getMessage(), e);
+		}
+	}
+	
+	
+	public static void rollbackTransaction(){
+		DbConnection conn= localConnection.get();
+		if(conn == null){
+			throw new IllegalStateException("conn is not in process.");
+		}
+		try {
+			conn.doRollback();
+		} catch (SQLException e) {
+			throw new RuntimeException(e.getMessage(), e);
+		}
+		transactionCaches.get().clear();
+		transactionBatches.get().clear();
+	}
+	
+	private Db(){}
+	
+	/**
+	 * executeQuery
+	 * @param conn
+	 * @param sql
+	 */
+	public static Map<String,Object> executeQuery(Connection conn, String sql){
+		try(PreparedStatement ps =	conn.prepareStatement(sql);ResultSet rs = ps.executeQuery();){
+			Map<String,Object> map = new HashMap<>();
+			while(rs.next()){
+				ResultSetMetaData rsmd = rs.getMetaData();
+				int count = rsmd.getColumnCount();
+				String name = rsmd.getColumnLabel(count);
+				if(name == null){
+					name = rsmd.getColumnName(count);
+				}
+				Object val = rs.getObject(count);
+				map.put(name, val);
+			}
+			return map;
+		} catch (SQLException e) {
+			throw new RuntimeException(e.getMessage(),e);
+		}
+	}
+	
+	/**
+	 * executeUpdate
+	 * @param conn
+	 * @param sql
+	 */
+	public static int executeUpdate(Connection conn, String sql){
+		try (PreparedStatement ps =	conn.prepareStatement(sql);){
+			return ps.executeUpdate();
+		} catch (SQLException e) {
+			throw new RuntimeException(e.getMessage() , e);
+		}
+	}
 }

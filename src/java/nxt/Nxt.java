@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+import nxt.db.Db;
+import nxt.db.DbVersion;
 import nxt.util.Logger;
 import nxt.util.Time;
 
@@ -88,14 +90,39 @@ public class Nxt {
 		init();
 	}
 	
-	private static int getIntProperty(String name){
+	public static String getStringProperty(String name){
+		return properties.getProperty(name,"");
+	}
+	
+	public static String getStringProperty(String name , String defaultValue){
+		String value = properties.getProperty(name);
+		if(value == null){
+			return defaultValue;
+		}
+		return value;
+	}
+	
+	/**
+	 * get property value and transform them to int value  
+	 * @param name
+	 * @return
+	 */
+	public static int getIntProperty(String name){
 		return getIntProperty(name, 0);
 	}
 	
-	private static int getIntProperty(String name , int defaultVal){
+	/**
+	 * get property value and has a default value 
+	 * @param name
+	 * @param defaultVal
+	 * @return
+	 */
+	public static int getIntProperty(String name , int defaultVal){
 		String value =  properties.getProperty(name);
-		if(value.equals(anObject)){
-			
+		try{
+			return Integer.valueOf(value);
+		}catch(Exception ex){
+			return defaultVal;
 		}
 	}
 	
@@ -141,7 +168,8 @@ public class Nxt {
 		static{
 			long startTime = System.currentTimeMillis();
 			Logger.init();
-			
+			Db.init();
+			DbVersion.init();
 		}
 		public static void init(){}
 		private Init(){}
