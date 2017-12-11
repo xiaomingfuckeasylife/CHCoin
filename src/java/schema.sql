@@ -17,13 +17,19 @@ drop table if exists purchase_feedback;
 drop table if exists purcharse_public_feedback;
 drop table if exists unconfirmed_transaction;
 drop table if exists asset_transfer;
+drop table if exists reward_receip_assign;
+drop table if exists escrow;
+drop table if exists escrow_decision;
+drop table if exists subscription;
+drop table if exists at;
+drop table if exists at_state;
 
 -- 区块表
 create table block(
 	db_id int auto_increment primary key COMMENT "自增长ID",
 	id BIGINT not null UNIQUE key COMMENT "主键",
 	version int not null COMMENT "版本号",
-	`timestamp` int not null COMMENT "时间戳",
+	`timestamp` int not null unique key COMMENT "时间戳",
 	previous_block_id BIGINT COMMENT "前一个区块ID",
 	FOREIGN KEY (previous_block_id) REFERENCES block(id) on delete CASCADE,
 	total_amount BIGINT not null COMMENT "区块总金额",
@@ -41,6 +47,7 @@ create table block(
 	payload_hash BINARY(32) not null COMMENT "区块负载hash值",
 	generator_id BIGINT not null COMMENT "区块写入者的账户ID",
 	nonce BIGINT not null COMMENT "生成区块的随机数",
+	ats binary comment "与at表有关",
 	INDEX(generator_id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
@@ -51,13 +58,13 @@ create table `transaction`(
 	id BIGINT UNIQUE key COMMENT "主键",
 	deadline smallint not null COMMENT "交易的截止日期",
 	sender_public_key BINARY(32) not null COMMENT "交易发出者的public key",
-	recipent_id BIGINT null COMMENT "收款人ID",
+	recipient_id BIGINT null COMMENT "收款人ID",
 	amount BIGINT not null COMMENT "金额",
 	fee BIGINT not null COMMENT "费用",
 	height int not null COMMENT "高度",
 	block_id BIGINT not null COMMENT "交易对应的区块ID",
 	FOREIGN key(block_id) REFERENCES block(id) on DELETE CASCADE,
-	signature BINARY(64) not null COMMENT "交易签名",
+	signature BINARY(64) COMMENT "交易签名",
 	`timestamp` int not null COMMENT "交易时间戳",
 	type TINYINT not null COMMENT "交易类型",
 	subtype TINYINT not null COMMENT "交易子类型",
@@ -74,9 +81,10 @@ create table `transaction`(
 	ec_block_id BIGINT default null,
 	has_encrypttoself_message TINYINT not null default 0 COMMENT "是否有加密对自己的消息，默认false",
 	INDEX(sender_id),
-	INDEX(recipent_id),
+	INDEX(recipient_id),
 	INDEX(`full_hash`),
-	INDEX(block_timestamp desc)
+	INDEX(block_timestamp desc),
+	index(recipient_id,amount ,height)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- 节点表
@@ -84,8 +92,12 @@ create table peer(
 	address VARCHAR(256) primary key not null
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-update `TRANSACTION` set version = 0;
-update `TRANSACTION` set has_message = 1 where type = 1 and subtype = 0;
+-- 这个地方有点问题
+--truncate table transaction;
+--truncate table block;
+--update `TRANSACTION` set version = 0;
+--update `TRANSACTION` set has_message = 1 where type = 1 and subtype = 0;
+
 
 -- 别名
 create table alias(
@@ -164,7 +176,8 @@ CREATE TABLE ask_order(
 	latest TINYINT default 1 COMMENT "是否为最新记录，默认为最新记录", 
 	UNIQUE INDEX(id , height desc),
 	INDEX(account_id , height),
-	INDEX(asset_id,price)
+	INDEX(asset_id,price),
+	INDEX(creation_height desc)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- 买单 
@@ -181,7 +194,8 @@ CREATE TABLE bid_order(
 	latest TINYINT default 1 COMMENT "是否为最新记录，默认为最新记录", 
 	UNIQUE INDEX(id , height desc),
 	INDEX(account_id , height),
-	INDEX(asset_id,price)
+	INDEX(asset_id,price),
+	INDEX(creation_height desc)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- 商品
@@ -232,11 +246,11 @@ create table purchase(
 	UNIQUE index(id,height),
 	INDEX(buyer_id,height),
 	INDEX(seller_id,height),
-	INDEX(deadline,height)
+	INDEX(deadline,height),
+	INDEX(`timestamp` desc , id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- 账户信息表
-
 create table account(
 	db_id int auto_increment not null PRIMARY KEY ,
 	id BIGINT not null , 
@@ -248,16 +262,17 @@ create table account(
 	forged_balance bigint not null COMMENT "铸造中的金额",
 	`name` varchar(256) COMMENT "账户名称",
 	description varchar(256) COMMENT "描述",
-	current_leasing_height_from int COMMENT "从当前租赁高度",
-	current_leasing_height_to int COMMENT "到当前租赁高度",
+	-- current_leasing_height_from int COMMENT "从当前租赁高度",
+	-- current_leasing_height_to int COMMENT "到当前租赁高度",
 	current_leasing_id BIGINT null COMMENT "租赁人ID",
-	current_lessee_id BIGINT null COMMENT "承租人ID",
-	next_leasing_height_from int COMMENT "从下一个租赁高度",
-	next_leasing_height_to int COMMENT "到下一个租赁高度",
-	next_leasing_id BIGINT null COMMENT "下一个租赁人ID",
+	-- current_lessee_id BIGINT null COMMENT "承租人ID",
+	-- next_leasing_height_from int COMMENT "从下一个租赁高度",
+	-- next_leasing_height_to int COMMENT "到下一个租赁高度",
+	-- next_leasing_id BIGINT null COMMENT "下一个租赁人ID",
 	height int not null COMMENT "高度", 
 	latest TINYINT default 1 COMMENT "是否为最新记录，默认为最新记录" ,
-	UNIQUE KEY (id , height desc)
+	UNIQUE KEY (id , height desc),
+	index(id,balance,height desc)
 )ENGINE = INNODB DEFAULT CHARSET=utf8;
 
 -- 账户资产
@@ -269,7 +284,8 @@ create table account_asset(
 	unconfirmed_quantity BIGINT not null COMMENT "未确认数量",
 	height int not null COMMENT "高度",
 	latest TINYINT default 1 COMMENT "是否为最新记录，默认为最新记录" ,
-	UNIQUE INDEX(account_id,asset_id,height)
+	UNIQUE INDEX(account_id,asset_id,height),
+	INDEX(quantity desc)
 )ENGINE=INNODB DEFAULT CHARSET=utf8;
 
 -- 购买回馈信息
@@ -323,3 +339,97 @@ create table asset_transfer(
 )ENGINE=INNODB DEFAULT CHARSET=utf8;
 
 
+-- 奖励分配收款人
+create table reward_receip_assign(
+	db_id int auto_increment not null primary key ,
+	account_id Bigint not null comment "账户ID",
+	prev_recip_id bigint not null comment "前一个收款人ID",
+	recip_id bigint not null comment "收款ID",
+	from_height int not null comment "从高度",
+	height int not null comment "当前高度",
+	latest tinyint not null default 1 comment "是否最新",
+	unique index(account_id , height),
+	index(recip_id,height desc)
+);
+
+-- 国际支付宝
+create table escrow(
+	db_id int auto_increment not null primary key ,
+	id bigint not null,
+	sender_id bigint not null comment "发送者ID",
+	recipient_id bigint not null comment "收据ID",
+	amount bigint not null comment "金额",
+	required_signers int comment "需要的签名人",
+	deadline int not null comment "截止日期",
+	deadline_action int not null comment "截止行为",
+	height int not null comment "高度",
+	latest tinyint not null default 1 comment "是否最新",
+	unique index(id , height desc),
+	index(sender_id,height desc),
+	index(recipient_id,height desc),
+	index(deadline,height desc)
+);
+
+-- 国际支付宝决定
+create table escrow_decision(
+	db_id int auto_increment not null primary key ,
+	escrow_id bigint not null comment "支付宝ID",
+	account_id bigint not null comment "发送者ID",
+	decision int not null comment "决定",
+	height int not null comment "高度",
+	latest tinyint not null default 1 comment "是否最新",
+	unique index(escrow_id ,account_id, height desc),
+	index(escrow_id,height desc),
+	index(account_id,height desc)
+);
+
+-- 订阅
+create table subscription(
+	db_id int auto_increment not null primary key ,
+	id bigint not null,
+	sender_id bigint not null comment "发送者ID",
+	recipient_id bigint not null comment "收款人ID",
+	amount bigint not null comment "数量",
+	frequency int not null comment "频率",
+	time_next int not null comment "下一次",
+	height int not null comment "高度",
+	latest tinyint not null default 1 comment "是否最新",
+	unique index(id ,height desc),
+	index(sender_id,height desc),
+	index(recipient_id,height desc)
+);
+
+-- 方位
+create table at(
+	db_id int auto_increment not null primary key ,
+	id bigint not null,
+	creator_id bigint not null comment "创建者ID",
+	name varchar(256) comment "名称",
+	description varchar(256) comment "描述",
+	version smallint not null comment "版本",
+	csize int not null comment "?",
+	dsize int not null comment "?",
+	c_user_stack_bytes int not null comment "?",
+	c_call_stack_bytes int not null comment "?",
+	height int not null comment "高度",
+	latest tinyint not null default 1 comment "是否最新",
+	unique index(id ,height desc),
+	index(creator_id,height desc)
+);
+
+-- 方位状态
+create table at_state(
+	db_id int auto_increment not null primary key ,
+	at_id bigint not null,
+	state binary not null,
+	prev_height int not null,
+	next_height int not null,
+	sleep_between int not null,
+	prev_balance bigint not null,
+	freeze_when_same_balance tinyint not null,
+	min_activate_amount bigint not null,
+	height int not null comment "高度",
+	latest tinyint not null default 1 comment "是否最新",
+	unique iandex(at_id ,height desc),
+	index(at_id,next_height,height desc)
+);

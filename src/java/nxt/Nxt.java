@@ -170,9 +170,24 @@ public class Nxt {
 			Logger.init();
 			Db.init();
 			DbVersion.init();
+			TransactionProcessorImpl.getInstance();
+			
 		}
 		public static void init(){}
 		private Init(){}
 	}
 	
+	
+	public static BlockchainProcessorImpl getBlockchainProcessor(){
+		
+		return BlockchainProcessorImpl.getInstance();
+	}
+	
+	public static Blockchain getBlockchain(){
+		return BlockchainImpl.getInstance();
+	}
+	
+	public static int getEpochTime(){
+		return time.getTime();
+	}
 }

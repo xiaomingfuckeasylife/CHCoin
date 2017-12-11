@@ -1,5 +1,7 @@
 package nxt;
 
+import java.math.BigInteger;
+
 /**
  * 
  * @author clark
@@ -37,4 +39,10 @@ public interface Generator {
 		
 		
 	}
+	
+	public byte[] calculateGeneratorSignature(byte[] lastGenSig , long lastGenId);
+	
+	public int calculateScoop(byte[] genSig , long height);
+	
+	public BigInteger calculateDeadline(long accountId,long nonce , byte[] genSig , int scoop , long baseTarget);
 }

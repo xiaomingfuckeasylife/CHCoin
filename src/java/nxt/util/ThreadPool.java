@@ -7,8 +7,6 @@ import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.mysql.jdbc.log.Log;
-
 import nxt.Nxt;
 
 /**
@@ -59,5 +57,21 @@ public final class ThreadPool {
 		}
 	}
 	
+	/**
+	 * put runnable on container run before start 
+	 * @param runnable
+	 * @param runLast
+	 */
+	public static synchronized void runBeforeStart(Runnable runnable,boolean runLast){
+	
+		if(scheduledThreadPool == null){
+			throw new IllegalStateException("Executor service already started , no new jobs accepted");
+		}
+		
+		if(runLast)
+			lastBeforeStartJobs.add(runnable);
+		else 
+			beforeStartJobs.add(runnable);
+	}
 	
 }

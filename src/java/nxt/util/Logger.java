@@ -100,6 +100,14 @@ public final class Logger {
 		doLog(Lever.INFO,msg,null);
 	}
 	
+	public static void logDebugMessage(String msg , Exception ex){
+		doLog(Lever.INFO,msg,ex);
+	}
+	
+	public static void logDebugMessage(String msg){
+		doLog(Lever.INFO,msg,null);
+	}
+	
 	public static void logMessage(String msg){
 		doLog(Lever.INFO,msg,null);
 	}
@@ -153,4 +161,6 @@ public final class Logger {
 	}
 	
 	public static void init(){}
+	
+	
 }

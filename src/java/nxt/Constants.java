@@ -34,5 +34,12 @@ public final class Constants {
 		
 	}
 	
+	public static final int MAX_ROLLBACK = Nxt.getIntProperty("nxt.maxRollback");
+	
+	static{
+		if(MAX_ROLLBACK < 1440){
+			throw new RuntimeException("nxt.maxRollback must be at least 1440");
+		}
+	}
 	
 }

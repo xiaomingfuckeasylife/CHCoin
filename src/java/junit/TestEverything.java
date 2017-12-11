@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.math.BigInteger;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -13,7 +14,10 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.bouncycastle.util.Strings;
+
 import nxt.Constants;
+import nxt.GeneratorImpl;
 import nxt.Nxt;
 import nxt.db.Db;
 import nxt.db.NxtConnectionPool;
@@ -72,11 +76,18 @@ public class TestEverything implements Serializable{
 //			e.printStackTrace();
 //		}
 		
-		String str = "  -- `index` int not null COMMENT \"索引？\",";
-		System.out.println(StrKit.rmvPrefixBlank(str));
-		System.out.println(StrKit.rmvPrefixBlank(str).startsWith("--"));
+//		String str = "  -- `index` int not null COMMENT \"索引？\",";
+//		System.out.println(StrKit.rmvPrefixBlank(str));
+//		System.out.println(StrKit.rmvPrefixBlank(str).startsWith("--"));
+//		
+//		System.out.println((char)' ');
 		
-		System.out.println((char)' ');
+//		GeneratorImpl impl = new GeneratorImpl();
+//		System.out.println(Arrays.toString("829BD824B016326A401d083B33D09229".getBytes()));
+//		System.out.println(impl.calculateScoop("829BD824B016326A401d083B33D09229".getBytes(), 1));
+		
+		BigInteger hit = new BigInteger("1213");
+		System.out.println(hit.divide(BigInteger.valueOf(12131213)).intValue());
 	}
 	
 	class A implements Serializable{

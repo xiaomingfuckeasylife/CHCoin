@@ -2,6 +2,7 @@ package nxt.util;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * 
@@ -37,5 +38,35 @@ public final class Listeners<T ,E extends Enum<E>> {
 		}
 	}
 	
+	/**
+	 * 
+	 * @param listener
+	 * @param eventType
+	 */
+	public void addListener(Listener<T> listener , E eventType){
+		synchronized (eventType) {
+			List<Listener<T>> listListener = listenersMap.get(eventType);
+			if(listListener == null){
+				listListener = new CopyOnWriteArrayList<>();
+				listenersMap.put(eventType,listListener);
+			}
+			listListener.add(listener);
+		}
+	}
 	
+	/**
+	 * 
+	 * @param listener
+	 * @param eventType
+	 * @return
+	 */
+	public boolean removeListener(Listener<T> listener, E eventType){
+		synchronized (eventType) {
+			List<Listener<T>> listenerList = listenersMap.get(eventType);
+			if(listenerList != null){
+				return listenerList.remove(listener);
+			}
+		}
+		return false;
+	}
 }
