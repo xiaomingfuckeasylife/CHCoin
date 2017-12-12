@@ -50,4 +50,15 @@ public class BlockchainImpl implements Blockchain {
 		return false;
 	}
 
+	public void setLastBlock(BlockImpl block) {
+		this.lastBlock.set(block);
+	}
+	
+	public void setLastBlock(BlockImpl prevousBlock , BlockImpl block){
+		if(!this.lastBlock.compareAndSet(prevousBlock, block)){
+			throw new RuntimeException("last block is no longer previous block");
+		};
+	}
+	
+	
 }

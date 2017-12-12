@@ -5,7 +5,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -131,6 +133,16 @@ public final class Db {
 		throw new IllegalStateException("transaction already in progress");
 	}
 	
+	public static Connection getConnection() throws SQLException{
+		DbConnection connDb = localConnection.get();
+		if(connDb == null)
+		{
+			Connection conn = cp.getConnection();
+			conn.setAutoCommit(true);
+			return conn;
+		}
+		return connDb.conn;
+	}
 	
 	public static void endTransaction() {
 		DbConnection conn= localConnection.get();
@@ -183,20 +195,24 @@ public final class Db {
 	 * @param conn
 	 * @param sql
 	 */
-	public static Map<String,Object> executeQuery(Connection conn, String sql){
+	public static List<Map<String,Object>> executeQuery(Connection conn, String sql){
 		try(PreparedStatement ps =	conn.prepareStatement(sql);ResultSet rs = ps.executeQuery();){
-			Map<String,Object> map = new HashMap<>();
+			List<Map<String,Object>> mapList = new ArrayList<>();
 			while(rs.next()){
+				Map<String,Object> map = new HashMap<>();
 				ResultSetMetaData rsmd = rs.getMetaData();
 				int count = rsmd.getColumnCount();
-				String name = rsmd.getColumnLabel(count);
-				if(name == null){
-					name = rsmd.getColumnName(count);
+				for(int i=1;i<count+1;i++){
+					String name = rsmd.getColumnLabel(i);
+					if(name == null){
+						name = rsmd.getColumnName(i);
+					}
+					Object val = rs.getObject(i);
+					map.put(name, val);
 				}
-				Object val = rs.getObject(count);
-				map.put(name, val);
+				mapList.add(map);
 			}
-			return map;
+			return mapList;
 		} catch (SQLException e) {
 			throw new RuntimeException(e.getMessage(),e);
 		}

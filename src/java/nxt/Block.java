@@ -9,7 +9,7 @@ public interface Block {
 	
 	int getVersion();
 	
-	int getId();
+	long getId();
 	
 	String getStringId();
 	
@@ -37,7 +37,7 @@ public interface Block {
 	
 	long getTotalFeeNQT();
 	
-	int getPayloadHash();
+	byte[] getPayloadHash();
 	
 	List<? extends Transaction> getTransactions();
 	

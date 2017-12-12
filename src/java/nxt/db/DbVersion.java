@@ -1,13 +1,11 @@
 package nxt.db;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.sql.Connection;
-import java.sql.Statement;
+import java.util.List;
 import java.util.Map;
 
 import nxt.BlockchainProcessorImpl;
@@ -32,11 +30,11 @@ public class DbVersion {
 			try {
 				// if the version table is not exist will initialize the data
 				// base
-				Map<String, Object> map = Db.executeQuery(conn, "select next_update from version");
+				List<Map<String, Object>> map = Db.executeQuery(conn, "select next_update from version");
 				if (map.size() == 0 || map.size() > 1) {
 					throw new RuntimeException("Invalid version table");
 				}
-				nextUpdate = Integer.valueOf(map.get("next_update") + "");
+				nextUpdate = Integer.valueOf(map.get(0).get("next_update") + "");
 			} catch (Exception ex) {
 				Logger.logMessage("initialize an ampty database");
 				Db.executeUpdate(conn,

@@ -86,8 +86,22 @@ public class TestEverything implements Serializable{
 //		System.out.println(Arrays.toString("829BD824B016326A401d083B33D09229".getBytes()));
 //		System.out.println(impl.calculateScoop("829BD824B016326A401d083B33D09229".getBytes(), 1));
 		
-		BigInteger hit = new BigInteger("1213");
-		System.out.println(hit.divide(BigInteger.valueOf(12131213)).intValue());
+//		BigInteger hit = new BigInteger("1213");
+//		System.out.println(hit.divide(BigInteger.valueOf(12131213)).intValue());
+		
+		try (Connection conn = Db.beginTransaction();){
+			System.out.println(Db.executeQuery(conn, "select 1 from dual"));
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		try {
+			Connection conn = Db.getConnection();
+			System.out.println(Db.executeQuery(conn, "select 2 from dual"));
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
 	}
 	
 	class A implements Serializable{

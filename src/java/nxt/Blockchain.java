@@ -21,5 +21,4 @@ public interface Blockchain {
 	
 	boolean hasBlock(long blockId);
 	
-	
 }

@@ -1,5 +1,9 @@
 package nxt;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -7,6 +11,7 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Semaphore;
 
+import nxt.crypto.Crypto;
 import nxt.db.DerivedDbTable;
 import nxt.util.Listener;
 import nxt.util.Listeners;
@@ -48,6 +53,8 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor{
 	private volatile boolean isScanning ;
 	
 	private volatile boolean forceScan = Nxt.getBooleanProperties("nxt.forceScan");
+	
+	private Blockchain blockchain = BlockchainImpl.getInstance();
 	
 	public void forceScanAtStart(){
 		forceScan = true;
@@ -138,7 +145,51 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor{
 	}
 	
 	private void addGenesisBlock(){
-		
+		if(BlockDb.hasBlock(Genesis.GENESIS_BLOCK_ID)){
+			Logger.logMessage("Genesis already in database");
+			BlockImpl block = BlockDb.findLastBlock();
+			int height = block.getHeight();
+			Logger.logMessage("Last block height:" + height);
+			return ;
+		}
+		Logger.logMessage("Genesis block not in database , starting from scratch");
+		try{
+			// calculate payLoadhash . 
+			List<TransactionImpl> transactions = new ArrayList<>();
+			MessageDigest md = Crypto.sha256();
+			for(int i=0;i<transactions.size();i++){
+				// get transaction bytes TO-DO
+				md.update(transactions.get(i).getBytes());
+			}
+			
+			// get genesis blockAts
+			ByteBuffer bf = ByteBuffer.allocate(0);
+			bf.order(ByteOrder.LITTLE_ENDIAN);
+			byte[] ats = bf.array();
+			
+			BlockImpl genesisBlock = new BlockImpl();
+			genesisBlock.setVersion(-1);
+			genesisBlock.setTimestamp(0);;
+			genesisBlock.setPreviousBlockId(0);
+			genesisBlock.setTotalAmountNQT(0);
+			genesisBlock.setTotalFeeNQT(0);
+			// every transaction is 128 byte 
+			genesisBlock.setPayloadLength(transactions.size() * 128);
+			genesisBlock.setPayloadHash(md.digest());
+			genesisBlock.setGeneratorPublicKey(Genesis.CREATOR_PUBLIC_KEY);
+			// blank
+			genesisBlock.setGenerationSignature(new byte[32]);
+			genesisBlock.setBlockSignature(Genesis.GENESIS_BLOCK_SIGNATURE);
+			genesisBlock.setPreviousBlockHash(null);
+			genesisBlock.setBlockTransactions(transactions);
+			genesisBlock.setNonce(0);
+			genesisBlock.setBlockATs(ats);
+			// TO-DO
+			genesisBlock.setPrevious();
+			
+		}catch(Exception ex){
+			
+		}
 	}
 
 	@Override

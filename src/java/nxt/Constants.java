@@ -12,10 +12,14 @@ import java.util.Calendar;
  * 
  */
 public final class Constants {
+
+	// genesis initial base target 
+	public static final long INITIAL_BASE_TARGET = 18325193789L;
 	
+	// max number of transactions a block can have .
+	public static final int MAX_NUM_OF_TRANSACTIONS = 255;
 	// when the project start off 
 	public static final long EPOCH_BEGINNING ;
-	
 	/**
 	 * initial EPOCH_BEGINNING time ;
 	 */
