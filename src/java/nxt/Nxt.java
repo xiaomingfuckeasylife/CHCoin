@@ -183,7 +183,7 @@ public class Nxt {
 		return BlockchainProcessorImpl.getInstance();
 	}
 	
-	public static Blockchain getBlockchain(){
+	public static BlockchainImpl getBlockchain(){
 		return BlockchainImpl.getInstance();
 	}
 	

@@ -33,12 +33,8 @@ final class Genesis {
 			0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 	};
 	
-//	static final long CREATOR_ID = 0L;
-//	
-//	static final long GENESIS_RECIPIENTS = 0L;
-//	
-//	static final int []GENESIS_AMOUNTS = {};
-//	
-	
+	static final long CREATOR_ID = 0L;
+	static final long GENESIS_RECIPIENTS = 0L;
+	static final int []GENESIS_AMOUNTS = {};
 }
 

@@ -24,7 +24,7 @@ public final class ThreadPool {
 	 */
 	private static ScheduledExecutorService scheduledThreadPool;
 	/**
-	 * running in backgroud , long value is the delay time of the task 
+	 * running in backgroud , long value is the delay time of the task . HashMap not thread safe . using synchronized 
 	 */
 	private static Map<Runnable,Long> backgroudJobs = new HashMap<>();
 	private static Map<Runnable,Long> backgroundJobsCores = new HashMap<>();
@@ -34,6 +34,15 @@ public final class ThreadPool {
 	private static List<Runnable> beforeStartJobs = new ArrayList<>();
 	private static List<Runnable> lastBeforeStartJobs = new ArrayList<>();
 	private static List<Runnable> afterStartJobs = new ArrayList<>();
+	
+	/**
+	 * @param name
+	 * @param runnable
+	 * @param dely
+	 */
+	public static synchronized void scheduleThread(String name , Runnable runnable , int dely ){
+		scheduleThread(name, runnable, dely, TimeUnit.SECONDS);
+	}
 	
 	
 	/**

@@ -33,9 +33,12 @@ public class BlockchainImpl implements Blockchain {
 	}
 
 	@Override
-	public Block getBlockId(long blockId) {
-		// TODO Auto-generated method stub
-		return null;
+	public Block getBlock(long blockId) {
+		BlockImpl block = lastBlock.get();
+		if(block.getId() == blockId){
+			return block;
+		}
+		return BlockDb.findBlock(blockId);
 	}
 
 	@Override

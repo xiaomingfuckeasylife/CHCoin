@@ -7,6 +7,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -101,7 +102,7 @@ public class TestEverything implements Serializable{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+		SecureRandom sr = new  SecureRandom();
 	}
 	
 	class A implements Serializable{

@@ -12,10 +12,25 @@ import java.util.Calendar;
  * 
  */
 public final class Constants {
-
+	
+	public static final int NQT_BLOCK = 0;
+	
+	public static final int BURST_DIFF_ADJUST_CHANGE_BLOCK = 2700;
+	
 	// genesis initial base target 
 	public static final long INITIAL_BASE_TARGET = 18325193789L;
 	
+	// genesis initial base target 
+	public static final long MAX_BASE_TARGET = 18325193789L;
+	
+	
+    public static final long MAX_BALANCE_NXT = 2158812800L;
+    
+    // 1 nxt is with 8 digital which means 1 nxt can be divided into 10^8 like bitcoin  
+    public static final long ONE_NXT = 100000000;
+    
+    public static final long MAX_BALANCE_NQT = MAX_BALANCE_NXT * ONE_NXT;
+    
 	// max number of transactions a block can have .
 	public static final int MAX_NUM_OF_TRANSACTIONS = 255;
 	// when the project start off 
@@ -45,5 +60,9 @@ public final class Constants {
 			throw new RuntimeException("nxt.maxRollback must be at least 1440");
 		}
 	}
+
 	
+	public static final int AT_FIX_BLOCK_2 = 67000;
+	public static final int AT_FIX_BLOCK_3 = 92000;
+    public static final int AT_FIX_BLOCK_4 = 255000;
 }

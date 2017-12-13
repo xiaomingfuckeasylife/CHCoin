@@ -3,6 +3,7 @@ package nxt;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.MessageDigest;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -10,8 +11,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import nxt.crypto.Crypto;
+import nxt.db.Db;
 import nxt.db.DerivedDbTable;
 import nxt.util.Listener;
 import nxt.util.Listeners;
@@ -54,7 +57,7 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor{
 	
 	private volatile boolean forceScan = Nxt.getBooleanProperties("nxt.forceScan");
 	
-	private Blockchain blockchain = BlockchainImpl.getInstance();
+	private BlockchainImpl blockchain = BlockchainImpl.getInstance();
 	
 	public void forceScanAtStart(){
 		forceScan = true;
@@ -134,20 +137,43 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor{
 		}, Event.RESCAN_END);
 		
 		ThreadPool.runBeforeStart(new Runnable() {
-			
 			@Override
 			public void run() {
-				
+				addGenesisBlock();
+				if(forceScan){
+					scan(0);
+				}
 			}
 			
 		}, false);
 		
+		ThreadPool.scheduleThread("GetMoreBlocks", getMoreBlocksThread, 2);
+		
+	}
+	
+	// 
+	private static Runnable getMoreBlocksThread = new Runnable() {
+		
+		@Override
+		public void run() {
+			
+		}
+	};
+	
+	
+	/**
+	 * scan from height 
+	 * @param height
+	 */
+	private static void scan(int height){
+		// TODO
 	}
 	
 	private void addGenesisBlock(){
 		if(BlockDb.hasBlock(Genesis.GENESIS_BLOCK_ID)){
 			Logger.logMessage("Genesis already in database");
 			BlockImpl block = BlockDb.findLastBlock();
+			this.blockchain.setLastBlock(block);
 			int height = block.getHeight();
 			Logger.logMessage("Last block height:" + height);
 			return ;
@@ -158,7 +184,7 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor{
 			List<TransactionImpl> transactions = new ArrayList<>();
 			MessageDigest md = Crypto.sha256();
 			for(int i=0;i<transactions.size();i++){
-				// get transaction bytes TO-DO
+				// get transaction bytes
 				md.update(transactions.get(i).getBytes());
 			}
 			
@@ -184,14 +210,24 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor{
 			genesisBlock.setBlockTransactions(transactions);
 			genesisBlock.setNonce(0);
 			genesisBlock.setBlockATs(ats);
-			// TO-DO
-			genesisBlock.setPrevious();
-			
+			genesisBlock.setPrevious(null);
+			addBlock(genesisBlock);
 		}catch(Exception ex){
-			
+			throw new RuntimeException(ex.getMessage(),ex);
 		}
 	}
-
+	
+	private void addBlock(BlockImpl genesisBlock){
+		
+		try(Connection conn = Db.getConnection();){
+			BlockDb.saveBlock(conn, genesisBlock);
+			this.blockchain.setLastBlock(genesisBlock);
+		}catch(Exception ex){
+			throw new RuntimeException(ex.getMessage(), ex);
+		}
+		
+	}
+	
 	@Override
 	public boolean addListener(Listener<Block> listener, Event eventType) {
 		return false;

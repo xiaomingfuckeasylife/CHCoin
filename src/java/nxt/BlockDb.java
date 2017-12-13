@@ -17,6 +17,25 @@ import nxt.db.Db;
  */
 final class BlockDb {
 	
+	/**
+	 * 
+	 * @param genesisBlock
+	 */
+	public static void saveBlock(Connection conn , BlockImpl genesisBlock){
+		
+	}
+	
+	public static BlockImpl findBlock(long blockId){
+		try(Connection conn = Db.getConnection();){
+			List<Map<String,Object>> blockList = Db.executeQuery(conn, "select * from block where id = " + blockId);
+			if(blockList.size() >0){
+				return loadBlock(blockList.get(0));
+			}
+			return null;
+		}catch(Exception ex){
+			throw new RuntimeException(ex.getMessage(),ex);
+		}
+	}
 	
 	/**
 	 * has block or not
@@ -24,7 +43,7 @@ final class BlockDb {
 	static boolean hasBlock(long blockId){
 		
 		try(Connection conn = Db.getConnection();){
-			return (Long)Db.executeQuery(conn, "select count(*) as num from block where id = " + blockId).get("num") >0;
+			return (Long)Db.executeQuery(conn, "select count(*) as num from block where id = " + blockId).get(0).get("num") >0;
 		}catch(Exception ex){
 			throw new RuntimeException(ex.getMessage(),ex);
 		}
@@ -37,15 +56,17 @@ final class BlockDb {
 	 */
 	static BlockImpl findLastBlock(){
 		try(Connection conn = Db.getConnection();){
-			Map<String,Object> blockMap = Db.executeQuery(conn, "select * from block order by db_id desc limit 1");
-			return loadBlock(blockMap);
+			List<Map<String,Object>> blockMap = Db.executeQuery(conn, "select * from block order by db_id desc limit 1");
+			if(blockMap.size() > 0){
+				return loadBlock(blockMap.get(0));
+			}
+			return null;
 		}catch(Exception ex){
 			throw new RuntimeException(ex.getMessage(),ex);
 		}
 	}
 	
 	private static BlockImpl loadBlock(Map<String,Object> blockMap){
-		
 		int version = (int) blockMap.get("version");
 		int timestamp = (int) blockMap.get("timestamp");
 		long previousBlockId = (long) blockMap.get("previousBlockId");

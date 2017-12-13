@@ -3,8 +3,18 @@ package nxt;
 
 import org.json.simple.JSONObject;
 
-public interface Transaction {
+public interface Transaction extends Comparable<Transaction>{
 		
+	 	public static interface Builder {
+	 		
+	        Builder recipientId(long recipientId);
+	        
+	        Builder referencedTransactionFullHash(String referencedTransactionFullHash);
+	        
+	        Transaction build() throws Exception;
+	        
+	    }
+	 	
 		long getId();
 
 	    String getStringId();
@@ -39,10 +49,6 @@ public interface Transaction {
 
 	    String getFullHash();
 
-//	    TransactionType getType();
-//
-//	    Attachment getAttachment();
-
 	    void sign(String secretPhrase);
 
 	    boolean verifyPublicKey();
@@ -58,22 +64,8 @@ public interface Transaction {
 	    JSONObject getJSONObject();
 
 	    byte getVersion();
-
-//	    Appendix.Message getMessage();
-//
-//	    Appendix.EncryptedMessage getEncryptedMessage();
-//
-//	    Appendix.EncryptToSelfMessage getEncryptToSelfMessage();
-//
-//	    List<? extends Appendix> getAppendages();
-
-	    /*
-	    Collection<TransactionType> getPhasingTransactionTypes();
-
-	    Collection<TransactionType> getPhasedTransactionTypes();
-	    */
-
+	    
 	    int getECBlockHeight();
-
+	    
 	    long getECBlockId();
 }
