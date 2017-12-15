@@ -4,11 +4,17 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
+
+import javax.sql.ConnectionPoolDataSource;
 
 import nxt.db.Db;
 import nxt.db.DbVersion;
 import nxt.util.Logger;
+import nxt.util.StrKit;
 import nxt.util.Time;
 
 /**
@@ -151,6 +157,22 @@ public class Nxt {
 		Logger.logMessage(name+" not defined , assuming false");
 		
 		return defaultValue;
+	}
+	
+	public static List<String> getStringListProperty(String  strList){
+		String valList = getStringProperty(strList);
+		if(StrKit.isBlank(valList)){
+			return Collections.emptyList();
+		}
+		List<String> retList = new ArrayList<String>();
+		String[] arrStr =  strList.split(";");
+		for(String s : arrStr){
+			if(StrKit.isBlank(s)){
+				continue;
+			}
+			retList.add(s);
+		}
+		return retList;
 	}
 	
 	

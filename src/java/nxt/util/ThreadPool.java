@@ -83,4 +83,11 @@ public final class ThreadPool {
 			beforeStartJobs.add(runnable);
 	}
 	
+	/**
+	 * put runnable 
+	 * @param runable
+	 */
+	public static synchronized void runAfterStart(Runnable runable){
+		afterStartJobs.add(runable);
+	}
 }

@@ -82,23 +82,53 @@ public final class Convert {
 		return left + right;
 	}
 	
+	public static String truncate(String s, String replaceNull, int limit, boolean dots) {
+        return s == null ? replaceNull : s.length() > limit ? (s.substring(0, dots ? limit - 3 : limit) + (dots ? "..." : "")) : s;
+    }
+	
+	
+	public static  long parseUnsignedLong(String blockId){
+		
+		if(blockId == null){
+			return 0;
+		}
+		
+		BigInteger i = new BigInteger(blockId);
+		
+		if(i.signum() <0 || i.compareTo(two64) != -1){
+			throw new IllegalStateException("value over flow ");
+		}
+		
+		return i.longValue();
+	}
+	
+	public static String toUnsignedLong(long objectId){
+		if (objectId >= 0) {
+            return String.valueOf(objectId);
+        }
+        BigInteger id = BigInteger.valueOf(objectId).add(two64);
+        return id.toString();
+	}
+	
 	public static void main(String[] args) {
 		
-		System.out.println(new String(parseHexString(toHexString("helloworld".getBytes()))));
+//		System.out.println(new String(parseHexString(toHexString("helloworld".getBytes()))));
+//		
+//		long left =  Long.MAX_VALUE;
+//		long right = -1;;
+//		System.out.println(Long.MAX_VALUE);
+//		System.out.println(Long.MIN_VALUE);
+//		System.out.println((Long.MAX_VALUE - right));
+//		System.out.println(left > (Long.MAX_VALUE - right));
+//		
+//		// 00000010 => 00100000 
+//		//			   00000001
+//		//			   00100001 = 33
+//		System.out.println((2 << 4) | 1);
+//		byte[] hash = new byte[]{1,0,1,1,2,2,2,2,2}; // 144680349920722945 144680345659310081
+//		System.out.println(fullHashToId(hash));
 		
-		long left =  Long.MAX_VALUE;
-		long right = -1;;
-		System.out.println(Long.MAX_VALUE);
-		System.out.println(Long.MIN_VALUE);
-		System.out.println((Long.MAX_VALUE - right));
-		System.out.println(left > (Long.MAX_VALUE - right));
-		
-		// 00000010 => 00100000 
-		//			   00000001
-		//			   00100001 = 33
-		System.out.println((2 << 4) | 1);
-		byte[] hash = new byte[]{1,0,1,1,2,2,2,2,2}; // 144680349920722945 144680345659310081
-		System.out.println(fullHashToId(hash));
+//		System.out.println(parseUnsignedLong(-1L));
 	}
 	
 }

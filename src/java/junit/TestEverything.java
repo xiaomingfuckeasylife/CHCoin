@@ -18,6 +18,8 @@ import java.util.concurrent.TimeUnit;
 import org.bouncycastle.util.Strings;
 
 import nxt.Constants;
+import nxt.CountingInputStream;
+import nxt.CountingOutputStream;
 import nxt.GeneratorImpl;
 import nxt.Nxt;
 import nxt.db.Db;
@@ -90,19 +92,31 @@ public class TestEverything implements Serializable{
 //		BigInteger hit = new BigInteger("1213");
 //		System.out.println(hit.divide(BigInteger.valueOf(12131213)).intValue());
 		
-		try (Connection conn = Db.beginTransaction();){
-			System.out.println(Db.executeQuery(conn, "select 1 from dual"));
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
+//		try (Connection conn = Db.beginTransaction();){
+//			System.out.println(Db.executeQuery(conn, "select 1 from dual"));
+//		} catch (SQLException e) {
+//			e.printStackTrace();
+//		}
+//		
+//		try {
+//			Connection conn = Db.getConnection();
+//			System.out.println(Db.executeQuery(conn, "select 2 from dual"));
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//		SecureRandom sr = new  SecureRandom();
 		
-		try {
-			Connection conn = Db.getConnection();
-			System.out.println(Db.executeQuery(conn, "select 2 from dual"));
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		SecureRandom sr = new  SecureRandom();
+		CountingOutputStream cos = new CountingOutputStream(new ByteArrayOutputStream());
+		cos.write("helloworld".getBytes());
+		cos.flush();
+		cos.close();
+		System.out.println(cos.getCount());
+		
+		String test = "helloworld";
+		byte[] buf = new byte[test.length()];
+		CountingInputStream cis = new CountingInputStream(new ByteArrayInputStream(test.getBytes()));
+		cis.read(buf);
+		System.out.println(cis.getCount());
 	}
 	
 	class A implements Serializable{

@@ -13,6 +13,8 @@ import java.util.Calendar;
  */
 public final class Constants {
 	
+	public static final int[] MIN_VERSION = new int[] {1, 2};
+	
 	public static final int NQT_BLOCK = 0;
 	
 	public static final int BURST_DIFF_ADJUST_CHANGE_BLOCK = 2700;
@@ -35,6 +37,9 @@ public final class Constants {
 	public static final int MAX_NUM_OF_TRANSACTIONS = 255;
 	// when the project start off 
 	public static final long EPOCH_BEGINNING ;
+	
+    public static final boolean isTestnet = Nxt.getBooleanProperties("nxt.isTestnet");
+    public static final boolean isOffline = Nxt.getBooleanProperties("nxt.isOffline");
 	/**
 	 * initial EPOCH_BEGINNING time ;
 	 */

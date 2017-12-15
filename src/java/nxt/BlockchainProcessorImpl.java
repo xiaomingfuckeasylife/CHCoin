@@ -1,5 +1,6 @@
 package nxt;
 
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.MessageDigest;
@@ -11,11 +12,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONStreamAware;
 
 import nxt.crypto.Crypto;
 import nxt.db.Db;
 import nxt.db.DerivedDbTable;
+import nxt.util.JSON;
 import nxt.util.Listener;
 import nxt.util.Listeners;
 import nxt.util.Logger;
@@ -57,7 +62,7 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor{
 	
 	private volatile boolean forceScan = Nxt.getBooleanProperties("nxt.forceScan");
 	
-	private BlockchainImpl blockchain = BlockchainImpl.getInstance();
+	private static BlockchainImpl blockchain = BlockchainImpl.getInstance();
 	
 	public void forceScanAtStart(){
 		forceScan = true;
@@ -86,6 +91,10 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor{
 	private List<DerivedDbTable> derivedTables = new CopyOnWriteArrayList<>();
 	
 	private volatile int lastTrimHeight;
+	private Long lastDownloaded = 0L;
+	private volatile Peer lastBlockchainFeeder;
+	private volatile int lastBlockchainFeederHeight;
+	private volatile boolean getMoreBlocks = true;
 	
 	private BlockchainProcessorImpl(){
 		
@@ -151,14 +160,173 @@ public final class BlockchainProcessorImpl implements BlockchainProcessor{
 		
 	}
 	
-	// 
-	private static Runnable getMoreBlocksThread = new Runnable() {
+	private static volatile boolean hasMoreBlocks = true;
+	/**
+	 * get block from other peer
+	 */
+	private Runnable getMoreBlocksThread = new Runnable() {
+		
+		private JSONStreamAware stream ;
+		
+		{
+			JSONObject obj = new JSONObject();
+			obj.put("requestType", "getCumulativeDifficuty");
+			stream = JSON.prepareRequest(obj);
+		}
+		private boolean peerHasMore;
 		
 		@Override
 		public void run() {
 			
+			if(!hasMoreBlocks){
+				return ;
+			}
+			
+			Peer peer = Peers.getBlockFeederPeer();
+			if(peer == null){
+				return;
+			}
+			
+			JSONObject response = peer.send(stream);
+			if (response == null) {
+				return;
+			}
+			BigInteger curCumulativeDifficulty = blockchain.getLastBlock().getCumulativeDifficulty();
+			String peerCumulativeDifficulty = (String) response.get("cumulativeDifficulty");
+			if (peerCumulativeDifficulty == null) {
+				return;
+			}
+			BigInteger betterCumulativeDifficulty = new BigInteger(peerCumulativeDifficulty);
+			if (betterCumulativeDifficulty.compareTo(curCumulativeDifficulty) < 0) {
+				return;
+			}
+			if (response.get("blockchainHeight") != null) {
+				lastBlockchainFeeder = peer;
+				lastBlockchainFeederHeight = ((Long) response.get("blockchainHeight")).intValue();
+			}
+			if (betterCumulativeDifficulty.equals(curCumulativeDifficulty)) {
+				return;
+			}
+
+			long commonBlockId = Genesis.GENESIS_BLOCK_ID;
+
+			if (blockchain.getLastBlock().getId() != Genesis.GENESIS_BLOCK_ID) {
+				commonBlockId = getCommonMilestoneBlockId(peer);
+			}
+			if (commonBlockId == 0 || !peerHasMore) {
+				return;
+			}
+
+			commonBlockId = getCommonBlockId(peer, commonBlockId);
+			if (commonBlockId == 0 || !peerHasMore) {
+				return;
+			}
+
+			final Block commonBlock = BlockDb.findBlock(commonBlockId);
+			if (commonBlock == null || blockchain.getHeight() - commonBlock.getHeight() >= 720) {
+				return;
+			}
+			
+			long currentBlockId = (lastDownloaded == 0 ? commonBlockId : lastDownloaded);
+			if(commonBlock.getHeight() < blockchain.getLastBlock().getHeight()) { // fork point
+				currentBlockId = commonBlockId;
+			}
+			else {
+				synchronized (blockCache) {
+					long checkBlockId = currentBlockId;
+					while (checkBlockId != blockchain.getLastBlock().getId()) {
+						if (blockCache.get(checkBlockId) == null) {
+							currentBlockId = blockchain.getLastBlock().getId();
+							break;
+						}
+						checkBlockId = blockCache.get(checkBlockId).getPreviousBlockId();
+					}
+				}
+			}
+			
+			
+			
+		}
+		
+		private long getCommonBlockId(Peer peer, long commonBlockId) {
+
+			while (true) {
+				JSONObject request = new JSONObject();
+				request.put("requestType", "getNextBlockIds");
+				request.put("blockId", Convert.toUnsignedLong(commonBlockId));
+				JSONObject response = peer.send(JSON.prepareRequest(request));
+				if (response == null) {
+					return 0;
+				}
+				JSONArray nextBlockIds = (JSONArray) response.get("nextBlockIds");
+				if (nextBlockIds == null || nextBlockIds.size() == 0) {
+					return 0;
+				}
+				// prevent overloading with blockIds
+				if (nextBlockIds.size() > 1440) {
+					Logger.logDebugMessage("Obsolete or rogue peer " + peer.getPeerAddress() + " sends too many nextBlockIds, blacklisting");
+					peer.blacklist();
+					return 0;
+				}
+				
+				for (Object nextBlockId : nextBlockIds) {
+					long blockId = Convert.parseUnsignedLong((String) nextBlockId);
+					if (! BlockDb.hasBlock(blockId)) {
+						return commonBlockId;
+					}
+					commonBlockId = blockId;
+				}
+			}
+
+		}
+		public long getCommonMilestoneBlockId(Peer peer){
+
+			String lastMilestoneBlockId = null;
+
+			while (true) {
+				JSONObject milestoneBlockIdsRequest = new JSONObject();
+				milestoneBlockIdsRequest.put("requestType", "getMilestoneBlockIds");
+				if (lastMilestoneBlockId == null) {
+					milestoneBlockIdsRequest.put("lastBlockId", blockchain.getLastBlock().getStringId());
+				} else {
+					milestoneBlockIdsRequest.put("lastMilestoneBlockId", lastMilestoneBlockId);
+				}
+
+				JSONObject response = peer.send(JSON.prepareRequest(milestoneBlockIdsRequest));
+				if (response == null) {
+					return 0;
+				}
+				JSONArray milestoneBlockIds = (JSONArray) response.get("milestoneBlockIds");
+				if (milestoneBlockIds == null) {
+					return 0;
+				}
+				if (milestoneBlockIds.isEmpty()) {
+					return Genesis.GENESIS_BLOCK_ID;
+				}
+				// prevent overloading with blockIds
+				if (milestoneBlockIds.size() > 20) {
+					Logger.logDebugMessage("Obsolete or rogue peer " + peer.getPeerAddress() + " sends too many milestoneBlockIds, blacklisting");
+					peer.blacklist();
+					return 0;
+				}
+				if (Boolean.TRUE.equals(response.get("last"))) {
+					peerHasMore = false;
+				}
+				for (Object milestoneBlockId : milestoneBlockIds) {
+					long blockId = Convert.parseUnsignedLong((String) milestoneBlockId);
+					if (BlockDb.hasBlock(blockId)) {
+						if (lastMilestoneBlockId == null && milestoneBlockIds.size() > 1) {
+							peerHasMore = false;
+						}
+						return blockId;
+					}
+					lastMilestoneBlockId = (String) milestoneBlockId;
+				}
+			}
 		}
 	};
+	
+	
 	
 	
 	/**
